@@ -50,11 +50,20 @@ body.focus .row button{padding:14px 16px;flex:1}
 .nav button{padding:12px 18px}
 .nav-mid{text-align:center;font-size:.85rem;color:var(--muted);line-height:1.3}
 summary{cursor:pointer;font-weight:700}
+.tabs{display:flex;gap:8px;margin-bottom:8px}
+.tabs a{padding:8px 14px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--surface);font-weight:500}
+.tabs a.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#picker button{min-width:42px;padding:6px 0;margin:0 4px 4px 0}
+#picker .ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+#picker .bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+#picker .cur{outline:2px solid var(--accent);outline-offset:1px}
+.plabel{font-size:.8rem;color:var(--muted);margin:10px 0 4px}
 #dl.ready{box-shadow:0 0 0 3px var(--okbg),0 0 0 5px var(--ok)}
 </style>
 </head>
 <body>
 <main>
+<nav class="tabs"><a href="index.html" class="on">Обзвон 1</a><a href="obzvon2.html" class="">Обзвон 2</a></nav>
 <h1>Обзвон на администрацию</h1>
 <p class="lead">Задавайте вопросы по порядку, сверяйтесь с ответом и отмечайте результат кандидата.</p>
 
@@ -73,6 +82,7 @@ summary{cursor:pointer;font-weight:700}
 <div class="row"><button id="mode">Режим опроса</button><button id="reset">Сбросить</button><button id="copy">Скопировать итог</button><button class="primary" id="dl">Скачать отчёт</button></div>
 </div>
 
+<details class="panel" id="pickd" style="margin:12px 0"><summary>Выбор вопроса</summary><div id="picker"></div></details>
 <div id="list"></div>
 <div class="nav" id="nav"><button id="prev">Назад</button><div class="nav-mid" id="navmid"></div><button class="primary" id="next">Далее</button></div>
 </main>
@@ -166,7 +176,7 @@ function showCur(){
   document.getElementById("next").disabled=cur===total;
   window.scrollTo(0,0);
 }
-function go(d){cur=Math.max(1,Math.min(total,cur+d));showCur();}
+function go(d){cur=Math.max(1,Math.min(total,cur+d));showCur();updatePicker();}
 document.getElementById("prev").onclick=function(){go(-1);};
 document.getElementById("next").onclick=function(){go(1);};
 document.getElementById("mode").onclick=function(){
@@ -212,9 +222,26 @@ document.getElementById("dl").onclick=function(){
     toast("Отчёт скачан");
   }catch(e){toast("Не удалось создать файл");}
 };
+var pk=document.getElementById("picker"),pbtn=[],pid=0;
+SECTIONS.forEach(function(sec){
+  var l=document.createElement("div");l.className="plabel";l.textContent=sec.t;pk.appendChild(l);
+  sec.q.forEach(function(){
+    var i=++pid,b=document.createElement("button");b.textContent=i;
+    b.onclick=function(){
+      cur=i;
+      if(document.body.classList.contains("focus"))showCur();
+      else document.getElementById("q"+i).scrollIntoView({behavior:"smooth",block:"center"});
+      updatePicker();
+    };
+    pk.appendChild(b);pbtn[i]=b;
+  });
+});
+function updatePicker(){
+  for(var i=1;i<=total;i++){var c=state[i]||"";if(i===cur)c+=" cur";pbtn[i].className=c;}
+}
 var _render=render,notified=false;
 render=function(){
-  _render();
+  _render();updatePicker();
   var done=0;for(var i=1;i<=total;i++)if(state[i])done++;
   var btn=document.getElementById("dl");
   btn.classList.toggle("ready",done===total);
